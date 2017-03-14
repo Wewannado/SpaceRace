@@ -9,7 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import cat.xtec.ioc.objects.Spacecraft;
 import cat.xtec.ioc.screens.GameScreen;
 
-public class InputHandler implements InputProcessor {
+public class GameScreenInputHandler implements InputProcessor {
 
     // Enter per a la gesitó del moviment d'arrastrar
     int previousY = 0;
@@ -20,7 +20,7 @@ public class InputHandler implements InputProcessor {
 
     private Stage stage;
 
-    public InputHandler(GameScreen screen) {
+    public GameScreenInputHandler(GameScreen screen) {
 
         // Obtenim tots els elements necessaris
         this.screen = screen;
@@ -63,9 +63,11 @@ public class InputHandler implements InputProcessor {
                 break;
             // Si l'estat és GameOver tornem a iniciar el joc
             case GAMEOVER:
+                Gdx.app.log("HIT", "Pushed while GameOver");
                 screen.tornarPrincipal();
                 break;
             case CRASHED:
+                Gdx.app.log("HIT", "Pushed while Crashed");
                 screen.reset();
                 break;
         }

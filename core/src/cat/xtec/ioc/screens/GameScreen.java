@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 import cat.xtec.ioc.SpaceRace;
 import cat.xtec.ioc.helpers.AssetManager;
-import cat.xtec.ioc.helpers.InputHandler;
+import cat.xtec.ioc.helpers.GameScreenInputHandler;
 import cat.xtec.ioc.objects.Asteroid;
 import cat.xtec.ioc.objects.ScrollHandler;
 import cat.xtec.ioc.objects.Spacecraft;
@@ -22,11 +22,8 @@ import cat.xtec.ioc.utils.Settings;
 
 public class GameScreen implements Screen {
 
-    // Els estats del joc
-    public enum GameState {
-        READY, RUNNING, CRASHED, GAMEOVER
-    }
-
+    Container containerPuntuacio;
+    private int animacion;
     private GameState currentState;
     private SpaceRace game;
     // Objectes necessaris
@@ -36,15 +33,11 @@ public class GameScreen implements Screen {
 
     private Label score;
     private Label.LabelStyle scoreStyle;
-    Container containerPuntuacio;
-
     // Encarregats de dibuixar elements per pantalla
     private ShapeRenderer shapeRenderer;
     private Batch batch;
-
     // Per controlar l'animació de l'explosió
     private float explosionTime = 0;
-
     // Preparem el textLayout per escriure text
     private GlyphLayout textLayout;
 
@@ -89,7 +82,7 @@ public class GameScreen implements Screen {
         currentState = GameState.READY;
 
         // Assignem com a gestor d'entrada la classe InputHandler
-        Gdx.input.setInputProcessor(new InputHandler(this));
+        Gdx.input.setInputProcessor(new GameScreenInputHandler(this));
 
     }
 
@@ -133,7 +126,6 @@ public class GameScreen implements Screen {
         shapeRenderer.end();
     }
 
-
     @Override
     public void show() {
 
@@ -149,20 +141,24 @@ public class GameScreen implements Screen {
         switch (currentState) {
 
             case CRASHED:
-                Gdx.app.log("CRASHED","");
+                //Gdx.app.log("CRASHED", "");
                 updateCrashed(delta);
                 break;
+            case EXPLODING:
+                //   Gdx.app.log("EXPLODING","");
+                updateExploding(delta);
+                break;
             case RUNNING:
-                Gdx.app.log("RUNNING","");
+                //Gdx.app.log("RUNNING", "");
                 stage.addActor(containerPuntuacio);
                 updateRunning(delta);
                 break;
             case READY:
-                Gdx.app.log("READY","");
-                    updateReady();
+                //Gdx.app.log("READY", "");
+                updateReady();
                 break;
             case GAMEOVER:
-                Gdx.app.log("Fi del Joc","");
+                // Gdx.app.log("Fi del Joc","");
                 updateGameOver(delta);
                 break;
 
@@ -179,50 +175,65 @@ public class GameScreen implements Screen {
         AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH / 2) - textLayout.width / 2, (Settings.GAME_HEIGHT / 2) - textLayout.height / 2);
         //stage.addActor(textLbl);
         batch.end();
-        Gdx.app.log("UpdateReady","");
+        //Gdx.app.log("UpdateReady", "");
     }
 
     private void updateRunning(float delta) {
         stage.act(delta);
         score.setText("Puntuacio " + game.getPuntuacio());
         containerPuntuacio.setPosition(score.getWidth() / 2 + 10, 10);
-
+        //Gdx.app.log("UpdateRunning", "");
 
         if (scrollHandler.collides(spacecraft)) {
             // Si hi ha hagut col·lisió: Reproduïm l'explosió i posem l'estat a GameOver
             AssetManager.explosionSound.play();
             stage.getRoot().findActor("spacecraft").remove();
             game.restaPerMort();
-            //TODO LI QUEDEN VIDES???
-            if(game.getPuntuacio()<=0){
-                textLayout.setText(AssetManager.fontTitle, "Game Over! :'(");
-                currentState= GameState.GAMEOVER;
-            }
-            else{
-                textLayout.setText(AssetManager.fontTitle, "Crashed! :'(");
-                currentState = GameState.CRASHED;
-            }
-
+            currentState = GameState.EXPLODING;
 
 
         }
     }
 
-    private void updateCrashed(float delta) {
-        stage.act(delta);
+    private void updateExploding(float delta) {
+        int frame;
 
+        stage.act(delta);
         batch.begin();
-        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
-        // Si hi ha hagut col·lisió: Reproduïm l'explosió i posem l'estat a GameOver
+
         batch.draw(AssetManager.explosionAnim.getKeyFrame(explosionTime, false), (spacecraft.getX() + spacecraft.getWidth() / 2) - 32, spacecraft.getY() + spacecraft.getHeight() / 2 - 32, 64, 64);
         batch.end();
-
+        if (AssetManager.explosionAnim.getKeyFrameIndex(explosionTime) == 15) {
+            animacion++;
+            if (animacion > 15) {
+                //TODO LI QUEDEN VIDES???
+                if (game.getPuntuacio() > 10) {
+                    currentState = GameState.CRASHED;
+                } else {
+                    currentState = GameState.GAMEOVER;
+                }
+            }
+        }
         explosionTime += delta;
+    }
+
+    private void updateCrashed(float delta) {
+        stage.act(delta);
+        textLayout.setText(AssetManager.fontTitle, "Crashed!");
+        batch.begin();
+        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
+        batch.end();
+
 
     }
 
     public void updateGameOver(float delta) {
+        stage.act(delta);
         textLayout.setText(AssetManager.fontTitle, "Game Over! :'(");
+        batch.begin();
+        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
+        batch.end();
+
     }
 
     public void reset() {
@@ -244,7 +255,6 @@ public class GameScreen implements Screen {
         explosionTime = 0.0f;
 
     }
-
 
     @Override
     public void resize(int width, int height) {
@@ -268,6 +278,8 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        stage.dispose();
+
 
     }
 
@@ -295,9 +307,17 @@ public class GameScreen implements Screen {
         return game;
     }
 
-    public void tornarPrincipal(){
+    public void tornarPrincipal() {
         game.resetPuntuacio();
-        game.setScreen(new SplashScreen(game));
         dispose();
+        game.setScreen(new SplashScreen(game));
+
     }
+
+    // Els estats del joc
+    public enum GameState {
+        READY, RUNNING, EXPLODING, CRASHED, GAMEOVER
+    }
+
+
 }

@@ -23,7 +23,7 @@ public class SplashScreen implements Screen {
 
     private Label.LabelStyle textTitleStyle, textLVLStyle;
     private Label textTitol, textLVL1, textLVL2, textLVL3;
-
+    private int microContador=0;
 
     public SplashScreen(SpaceRace game) {
 
@@ -99,10 +99,20 @@ public class SplashScreen implements Screen {
         stage.draw();
         stage.act(delta);
 
+
+
         // Si es fa clic en la pantalla, canviem la pantalla
+
         if (Gdx.input.isTouched()) {
             game.setScreen(new GameScreen(stage.getBatch(), game));
             dispose();
+            microContador++;
+            if (microContador>10) {
+              //  microContador=0;
+
+
+
+            }
         }
 
     }

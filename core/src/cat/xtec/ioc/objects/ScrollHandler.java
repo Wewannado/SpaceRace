@@ -89,6 +89,7 @@ public class ScrollHandler extends Group {
                 } else {
                     asteroid.reset(asteroids.get(i - 1).getTailX() + Settings.ASTEROID_GAP);
                 }
+                //if(gameScreen.getCurrentState())
                 gameScreen.getGame().aumentarPuntuacio(1);
             }
         }
