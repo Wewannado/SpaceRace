@@ -7,29 +7,32 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 
-import cat.xtec.ioc.helpers.AssetManager;
+import cat.xtec.ioc.helpers.GameAssetManager;
+import cat.xtec.ioc.screens.GameScreen;
 import cat.xtec.ioc.utils.Settings;
 
 public class Spacecraft extends Actor {
 
     // Distintes posicions de la spacecraft, recta, pujant i baixant
-    public static final int SPACECRAFT_STRAIGHT = 0;
-    public static final int SPACECRAFT_UP = 1;
-    public static final int SPACECRAFT_DOWN = 2;
+    private static final int SPACECRAFT_STRAIGHT = 0;
+    private static final int SPACECRAFT_UP = 1;
+    private static final int SPACECRAFT_DOWN = 2;
 
     // Paràmetres de la spacecraft
     private Vector2 position;
     private int width, height;
     private int direction;
+    private GameScreen gameScreen;
 
     private Rectangle collisionRect;
 
-    public Spacecraft(float x, float y, int width, int height) {
+    public Spacecraft(float x, float y, int width, int height, GameScreen gameScreen) {
 
         // Inicialitzem els arguments segons la crida del constructor
         this.width = width;
         this.height = height;
         position = new Vector2(x, y);
+        this.gameScreen = gameScreen;
 
         // Inicialitzem la spacecraft a l'estat normal
         direction = SPACECRAFT_STRAIGHT;
@@ -47,13 +50,13 @@ public class Spacecraft extends Actor {
         // Movem la spacecraft depenent de la direcció controlant que no surti de la pantalla
         switch (direction) {
             case SPACECRAFT_UP:
-                if (this.position.y - Settings.SPACECRAFT_VELOCITY * delta >= 0) {
-                    this.position.y -= Settings.SPACECRAFT_VELOCITY * delta;
+                if (this.position.y - gameScreen.spacecraft_Velocity * delta >= 0) {
+                    this.position.y -=gameScreen.spacecraft_Velocity * delta;
                 }
                 break;
             case SPACECRAFT_DOWN:
-                if (this.position.y + height + Settings.SPACECRAFT_VELOCITY * delta <= Settings.GAME_HEIGHT) {
-                    this.position.y += Settings.SPACECRAFT_VELOCITY * delta;
+                if (this.position.y + height + gameScreen.spacecraft_Velocity * delta <= Settings.GAME_HEIGHT) {
+                    this.position.y += gameScreen.spacecraft_Velocity * delta;
                 }
                 break;
             case SPACECRAFT_STRAIGHT:
@@ -98,18 +101,18 @@ public class Spacecraft extends Actor {
     }
 
     // Obtenim el TextureRegion depenent de la posició de la spacecraft
-    public TextureRegion getSpacecraftTexture() {
+    private TextureRegion getSpacecraftTexture() {
 
         switch (direction) {
 
             case SPACECRAFT_STRAIGHT:
-                return AssetManager.spacecraft;
+                return GameAssetManager.spacecraft;
             case SPACECRAFT_UP:
-                return AssetManager.spacecraftUp;
+                return GameAssetManager.spacecraftUp;
             case SPACECRAFT_DOWN:
-                return AssetManager.spacecraftDown;
+                return GameAssetManager.spacecraftDown;
             default:
-                return AssetManager.spacecraft;
+                return GameAssetManager.spacecraft;
         }
     }
 
@@ -128,7 +131,19 @@ public class Spacecraft extends Actor {
         batch.draw(getSpacecraftTexture(), position.x, position.y, width, height);
     }
 
-    public Rectangle getCollisionRect() {
+    public void shoot(ScrollHandler scrollHandler) {
+        if (gameScreen.getGame().getEnergia() > 0) {
+            for (Actor actor : gameScreen.getStage().getActors()) {
+                if (actor.getName() != null && actor.getName().equalsIgnoreCase("spacecraft")) {
+                    gameScreen.getStage().addActor(new Laser(actor.getX() + actor.getWidth(), actor.getY() + actor.getHeight() / 2, 22, 5, scrollHandler));
+                    gameScreen.getGame().setEnergia(gameScreen.getGame().getEnergia() - 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    Rectangle getCollisionRect() {
         return collisionRect;
     }
 }

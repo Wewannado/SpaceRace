@@ -8,19 +8,18 @@ import com.badlogic.gdx.scenes.scene2d.actions.RotateByAction;
 
 import java.util.Random;
 
-import cat.xtec.ioc.helpers.AssetManager;
+import cat.xtec.ioc.helpers.GameAssetManager;
 import cat.xtec.ioc.utils.Methods;
 import cat.xtec.ioc.utils.Settings;
 
 public class Asteroid extends Scrollable {
 
+    private Random r;
+    private boolean contact;
+    private int assetAsteroid;
     private Circle collisionCircle;
 
-    Random r;
-
-    int assetAsteroid;
-
-    public Asteroid(float x, float y, float width, float height, float velocity) {
+    Asteroid(float x, float y, float width, float height, float velocity) {
         super(x, y, width, height, velocity);
 
         // Creem el cercle
@@ -49,9 +48,9 @@ public class Asteroid extends Scrollable {
 
     }
 
-    public void setOrigin() {
+    private void setOrigin() {
 
-        this.setOrigin(width/2 + 1, height/2);
+        this.setOrigin(width / 2 + 1, height / 2);
 
     }
 
@@ -73,7 +72,7 @@ public class Asteroid extends Scrollable {
         // Modificarem l'alçada i l'amplada segons l'al·leatori anterior
         width = height = 34 * newSize;
         // La posició serà un valor aleatòri entre 0 i l'alçada de l'aplicació menys l'alçada
-        position.y =  new Random().nextInt(Settings.GAME_HEIGHT - (int) height);
+        position.y = new Random().nextInt(Settings.GAME_HEIGHT - (int) height);
 
         assetAsteroid = r.nextInt(15);
         setOrigin();
@@ -83,16 +82,29 @@ public class Asteroid extends Scrollable {
     @Override
     public void draw(Batch batch, float parentAlpha) {
         super.draw(batch, parentAlpha);
-        batch.draw(AssetManager.asteroid[assetAsteroid], position.x, position.y, this.getOriginX(), this.getOriginY(), width, height, this.getScaleX(), this.getScaleY(), this.getRotation());
+        batch.draw(GameAssetManager.asteroid[assetAsteroid], position.x, position.y, this.getOriginX(), this.getOriginY(), width, height, this.getScaleX(), this.getScaleY(), this.getRotation());
     }
 
     // Retorna true si hi ha col·lisió
-    public boolean collides(Spacecraft nau) {
+    boolean collides(Spacecraft nau) {
 
-        if (position.x <= nau.getX() + nau.getWidth()) {
-            // Comprovem si han col·lisionat sempre i quan l'asteroid estigui a la mateixa alçada que la spacecraft
-            return (Intersector.overlaps(collisionCircle, nau.getCollisionRect()));
-        }
-        return false;
+        // Comprovem si han col·lisionat sempre i quan l'asteroid estigui a la mateixa alçada que la spacecraft
+        return position.x <= nau.getX() + nau.getWidth() && (Intersector.overlaps(collisionCircle, nau.getCollisionRect()));
+    }
+
+
+    boolean collidesLaser(Laser laser) {
+        System.out.println((Intersector.overlaps(collisionCircle, laser.getLaserCollision())));
+        return (Intersector.overlaps(collisionCircle, laser.getLaserCollision()));
+
+    }
+
+
+    public boolean isContact() {
+        return contact;
+    }
+
+    void setContact(boolean contact) {
+        this.contact = contact;
     }
 }

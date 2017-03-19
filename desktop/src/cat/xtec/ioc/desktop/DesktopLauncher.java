@@ -11,8 +11,8 @@ public class DesktopLauncher {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 
         config.title = "SpaceRace";
-        config.width = Settings.GAME_WIDTH * 2;
-        config.height = Settings.GAME_HEIGHT * 2;
+        config.width = Settings.GAME_WIDTH * 3;
+        config.height = Settings.GAME_HEIGHT * 3;
 
 		new LwjglApplication(new SpaceRace(), config);
 	}

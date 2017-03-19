@@ -1,6 +1,7 @@
 package cat.xtec.ioc.helpers;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -12,7 +13,7 @@ import cat.xtec.ioc.screens.GameScreen;
 public class GameScreenInputHandler implements InputProcessor {
 
     // Enter per a la gesitó del moviment d'arrastrar
-    int previousY = 0;
+    private int previousY = 0;
     // Objectes necessaris
     private Spacecraft spacecraft;
     private GameScreen screen;
@@ -31,11 +32,42 @@ public class GameScreenInputHandler implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-        return false;
+        if (keycode == Input.Keys.UP) {
+            spacecraft.goUp();
+            return true;
+        } else if (keycode == Input.Keys.DOWN) {
+            spacecraft.goDown();
+            return true;
+        } else if (keycode == Input.Keys.RIGHT) {
+            spacecraft.goStraight();
+            return true;
+        } else if (keycode == Input.Keys.SPACE && screen.getCurrentState().equals(GameScreen.GameState.RUNNING)) {
+            spacecraft.shoot(screen.getScrollHandler());
+            return true;
+        } else {
+
+            return true;
+        }
     }
 
     @Override
     public boolean keyUp(int keycode) {
+
+        if (keycode == Input.Keys.SPACE && screen.getCurrentState().equals(GameScreen.GameState.CRASHED)) {
+            Gdx.app.log("HIT", "Pushed while Crashed");
+            screen.reset();
+            return true;
+        } else if (keycode == Input.Keys.SPACE && screen.getCurrentState().equals(GameScreen.GameState.READY)) {
+            // Si fem clic comencem el joc
+            screen.setCurrentState(GameScreen.GameState.RUNNING);
+            return true;
+        } else if (keycode == Input.Keys.SPACE && screen.getCurrentState().equals(GameScreen.GameState.GAMEOVER)) {
+            screen.tornarPrincipal();
+            return true;
+        }
+        if (keycode == Input.Keys.UP || keycode == Input.Keys.DOWN) {
+            spacecraft.goStraight();
+        }
         return false;
     }
 
@@ -87,6 +119,7 @@ public class GameScreenInputHandler implements InputProcessor {
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
+
         // Posem un umbral per evitar gestionar events quan el dit està quiet
         if (Math.abs(previousY - screenY) > 2)
 

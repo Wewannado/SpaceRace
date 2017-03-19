@@ -13,16 +13,17 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import java.util.ArrayList;
 
 import cat.xtec.ioc.SpaceRace;
-import cat.xtec.ioc.helpers.AssetManager;
+import cat.xtec.ioc.helpers.GameAssetManager;
 import cat.xtec.ioc.helpers.GameScreenInputHandler;
 import cat.xtec.ioc.objects.Asteroid;
+import cat.xtec.ioc.objects.Gui;
 import cat.xtec.ioc.objects.ScrollHandler;
 import cat.xtec.ioc.objects.Spacecraft;
 import cat.xtec.ioc.utils.Settings;
 
 public class GameScreen implements Screen {
 
-    Container containerPuntuacio;
+    private Container containerPuntuacio;
     private int animacion;
     private GameState currentState;
     private SpaceRace game;
@@ -40,25 +41,48 @@ public class GameScreen implements Screen {
     private float explosionTime = 0;
     // Preparem el textLayout per escriure text
     private GlyphLayout textLayout;
+    private Gui gui;
+    private Stage guiStage;
+    public float spacecraft_Velocity;
+    public float asteroid_Velocity;
 
     public GameScreen(Batch prevBatch, SpaceRace game) {
 
+
         // Iniciem la música
-        AssetManager.music.play();
+        GameAssetManager.music.play();
         this.game = game;
+
+        //Incialitzem les velocitats depenent del nivell.
+        switch (game.dificultat){
+            case 1:
+                this.spacecraft_Velocity=Settings.EASY_SPACECRAFT_VELOCITY;
+                this.asteroid_Velocity=Settings.EASY_ASTEROID_SPEED;
+                break;
+            case 2:
+                this.spacecraft_Velocity=Settings.MEDIUM_SPACECRAFT_VELOCITY;
+                this.asteroid_Velocity=Settings.MEDIUM_ASTEROID_SPEED;
+                break;
+            case 3:
+                this.spacecraft_Velocity=Settings.HARD_SPACECRAFT_VELOCITY;
+                this.asteroid_Velocity=Settings.HARD_ASTEROID_SPEED;
+                break;
+        }
 
         // Creem el ShapeRenderer
         shapeRenderer = new ShapeRenderer();
 
         // Creem l'stage i assginem el viewport
         stage = new Stage(game.getViewport(), prevBatch);
+        gui = new Gui(this);
+        guiStage = gui.getGUIStage();
 
         batch = stage.getBatch();
 
         // Creem la nau i la resta d'objectes
-        spacecraft = new Spacecraft(Settings.SPACECRAFT_STARTX, Settings.SPACECRAFT_STARTY, Settings.SPACECRAFT_WIDTH, Settings.SPACECRAFT_HEIGHT);
+        spacecraft = new Spacecraft(Settings.SPACECRAFT_STARTX, Settings.SPACECRAFT_STARTY, Settings.SPACECRAFT_WIDTH, Settings.SPACECRAFT_HEIGHT, this);
         scrollHandler = new ScrollHandler(this);
-        scoreStyle = new Label.LabelStyle(AssetManager.fontLVL, null);
+        scoreStyle = new Label.LabelStyle(GameAssetManager.fontLVL, null);
 
         score = new Label("Puntuacio " + game.getPuntuacio(), scoreStyle);
         //Creem el container per la puntuacio
@@ -77,12 +101,13 @@ public class GameScreen implements Screen {
 
         // Iniciem el GlyphLayout
         textLayout = new GlyphLayout();
-        textLayout.setText(AssetManager.fontTitle, "Are you\nready?");
+        textLayout.setText(GameAssetManager.fontTitle, "Are you\nready?");
 
         currentState = GameState.READY;
 
         // Assignem com a gestor d'entrada la classe InputHandler
         Gdx.input.setInputProcessor(new GameScreenInputHandler(this));
+
 
     }
 
@@ -137,6 +162,7 @@ public class GameScreen implements Screen {
         // Dibuixem tots els actors de l'stage
         stage.draw();
 
+
         // Depenent de l'estat del joc farem unes accions o unes altres
         switch (currentState) {
 
@@ -164,52 +190,49 @@ public class GameScreen implements Screen {
 
         }
 
-        //drawElements();
-
     }
 
     private void updateReady() {
 
         // Dibuixem el text al centre de la pantalla
         batch.begin();
-        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH / 2) - textLayout.width / 2, (Settings.GAME_HEIGHT / 2) - textLayout.height / 2);
-        //stage.addActor(textLbl);
+        GameAssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH / 2) - textLayout.width / 2, (Settings.GAME_HEIGHT / 2) - textLayout.height / 2);
         batch.end();
-        //Gdx.app.log("UpdateReady", "");
     }
 
     private void updateRunning(float delta) {
         stage.act(delta);
         score.setText("Puntuacio " + game.getPuntuacio());
         containerPuntuacio.setPosition(score.getWidth() / 2 + 10, 10);
-        //Gdx.app.log("UpdateRunning", "");
 
         if (scrollHandler.collides(spacecraft)) {
             // Si hi ha hagut col·lisió: Reproduïm l'explosió i posem l'estat a GameOver
-            AssetManager.explosionSound.play();
+            GameAssetManager.explosionSound.play();
             stage.getRoot().findActor("spacecraft").remove();
             game.restaPerMort();
             currentState = GameState.EXPLODING;
 
 
         }
+        gui.actualitzarControls();
+        guiStage.act(delta);
+        guiStage.draw();
     }
 
     private void updateExploding(float delta) {
-        int frame;
-
         stage.act(delta);
         batch.begin();
 
-        batch.draw(AssetManager.explosionAnim.getKeyFrame(explosionTime, false), (spacecraft.getX() + spacecraft.getWidth() / 2) - 32, spacecraft.getY() + spacecraft.getHeight() / 2 - 32, 64, 64);
+        batch.draw(GameAssetManager.explosionAnim.getKeyFrame(explosionTime, false), (spacecraft.getX() + spacecraft.getWidth() / 2) - 32, spacecraft.getY() + spacecraft.getHeight() / 2 - 32, 64, 64);
         batch.end();
-        if (AssetManager.explosionAnim.getKeyFrameIndex(explosionTime) == 15) {
+        if (GameAssetManager.explosionAnim.getKeyFrameIndex(explosionTime) == 15) {
             animacion++;
             if (animacion > 15) {
-                //TODO LI QUEDEN VIDES???
-                if (game.getPuntuacio() > 10) {
+                if (game.getPuntuacio() > 0) {
+                    Gdx.app.log("Puntuacio:", "La puntuacio es " + game.getPuntuacio());
                     currentState = GameState.CRASHED;
                 } else {
+                    Gdx.app.log("Puntuacio:", "La puntuacio es " + game.getPuntuacio());
                     currentState = GameState.GAMEOVER;
                 }
             }
@@ -219,19 +242,19 @@ public class GameScreen implements Screen {
 
     private void updateCrashed(float delta) {
         stage.act(delta);
-        textLayout.setText(AssetManager.fontTitle, "Crashed!");
+        textLayout.setText(GameAssetManager.fontTitle, "Crashed!");
         batch.begin();
-        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
+        GameAssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
         batch.end();
 
 
     }
 
-    public void updateGameOver(float delta) {
+    private void updateGameOver(float delta) {
         stage.act(delta);
-        textLayout.setText(AssetManager.fontTitle, "Game Over! :'(");
+        textLayout.setText(GameAssetManager.fontTitle, "Game Over! :'(");
         batch.begin();
-        AssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
+        GameAssetManager.fontTitle.draw(batch, textLayout, (Settings.GAME_WIDTH - textLayout.width) / 2, (Settings.GAME_HEIGHT - textLayout.height) / 2);
         batch.end();
 
     }
@@ -239,7 +262,7 @@ public class GameScreen implements Screen {
     public void reset() {
 
         // Posem el text d'inici
-        textLayout.setText(AssetManager.fontTitle, "Are you\nready?");
+        textLayout.setText(GameAssetManager.fontTitle, "Are you\nready?");
         // Cridem als restart dels elements.
         spacecraft.reset();
         scrollHandler.reset();
@@ -307,8 +330,11 @@ public class GameScreen implements Screen {
         return game;
     }
 
+    /**
+     * Retorna a la SplashScren
+     */
     public void tornarPrincipal() {
-        game.resetPuntuacio();
+        game.resetVariables();
         dispose();
         game.setScreen(new SplashScreen(game));
 

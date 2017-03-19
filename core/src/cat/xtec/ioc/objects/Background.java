@@ -2,10 +2,10 @@ package cat.xtec.ioc.objects;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 
-import cat.xtec.ioc.helpers.AssetManager;
+import cat.xtec.ioc.helpers.GameAssetManager;
 
-public class Background extends Scrollable {
-    public Background(float x, float y, float width, float height, float velocity) {
+class Background extends Scrollable {
+    Background(float x, float y, float width, float height, float velocity) {
         super(x, y, width, height, velocity);
     }
 
@@ -13,7 +13,7 @@ public class Background extends Scrollable {
     public void draw(Batch batch, float parentAlpha) {
         super.draw(batch, parentAlpha);
         batch.disableBlending();
-        batch.draw(AssetManager.background, position.x, position.y, width, height);
+        batch.draw(GameAssetManager.background, position.x, position.y, width, height);
         batch.enableBlending();
     }
 }

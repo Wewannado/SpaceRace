@@ -1,8 +1,9 @@
 package cat.xtec.ioc.objects;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
+import com.badlogic.gdx.utils.Array;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -14,20 +15,19 @@ import cat.xtec.ioc.utils.Settings;
 public class ScrollHandler extends Group {
 
     // Fons de pantalla
-    Background bg, bg_back;
+    private Background bg, bg_back;
 
     // Asteroides
-    int numAsteroids;
-    private ArrayList<Asteroid> asteroids;
-    GameScreen gameScreen;
-
+    private int numAsteroids;
+    private GameScreen gameScreen;
     // Objecte Random
-    Random r;
+    private Random r;
+    private ArrayList<Asteroid> asteroids;
 
     public ScrollHandler(GameScreen gameScreen) {
 
 
-        this.gameScreen=gameScreen;
+        this.gameScreen = gameScreen;
         // Creem els dos fons
         bg = new Background(0, 0, Settings.GAME_WIDTH * 2, Settings.GAME_HEIGHT, Settings.BG_SPEED);
         bg_back = new Background(bg.getTailX(), 0, Settings.GAME_WIDTH * 2, Settings.GAME_HEIGHT, Settings.BG_SPEED);
@@ -49,7 +49,7 @@ public class ScrollHandler extends Group {
         float newSize = Methods.randomFloat(Settings.MIN_ASTEROID, Settings.MAX_ASTEROID) * 34;
 
         // Afegim el primer Asteroid a l'Array i al grup
-        Asteroid asteroid = new Asteroid(Settings.GAME_WIDTH, r.nextInt(Settings.GAME_HEIGHT - (int) newSize), newSize, newSize, Settings.ASTEROID_SPEED);
+        Asteroid asteroid = new Asteroid(Settings.GAME_WIDTH, r.nextInt(Settings.GAME_HEIGHT - (int) newSize), newSize, newSize, gameScreen.asteroid_Velocity);
         asteroids.add(asteroid);
         addActor(asteroid);
 
@@ -58,7 +58,7 @@ public class ScrollHandler extends Group {
             // Creem la mida al·leatòria
             newSize = Methods.randomFloat(Settings.MIN_ASTEROID, Settings.MAX_ASTEROID) * 34;
             // Afegim l'asteroid.
-            asteroid = new Asteroid(asteroids.get(asteroids.size() - 1).getTailX() + Settings.ASTEROID_GAP, r.nextInt(Settings.GAME_HEIGHT - (int) newSize), newSize, newSize, Settings.ASTEROID_SPEED);
+            asteroid = new Asteroid(asteroids.get(asteroids.size() - 1).getTailX() + Settings.ASTEROID_GAP, r.nextInt(Settings.GAME_HEIGHT - (int) newSize), newSize, newSize, gameScreen.asteroid_Velocity);
             // Afegim l'asteroide a l'ArrayList
             asteroids.add(asteroid);
             // Afegim l'asteroide al grup d'actors
@@ -73,48 +73,55 @@ public class ScrollHandler extends Group {
         // Si algun element està fora de la pantalla, fem un reset de l'element.
         if (bg.isLeftOfScreen()) {
             bg.reset(bg_back.getTailX());
-
         } else if (bg_back.isLeftOfScreen()) {
             bg_back.reset(bg.getTailX());
-
         }
-
         for (int i = 0; i < asteroids.size(); i++) {
-
             Asteroid asteroid = asteroids.get(i);
             if (asteroid.isLeftOfScreen()) {
                 if (i == 0) {
                     asteroid.reset(asteroids.get(asteroids.size() - 1).getTailX() + Settings.ASTEROID_GAP);
-
+                    asteroid.setVisible(true);
                 } else {
                     asteroid.reset(asteroids.get(i - 1).getTailX() + Settings.ASTEROID_GAP);
+                    asteroid.setVisible(true);
                 }
-                //if(gameScreen.getCurrentState())
-                gameScreen.getGame().aumentarPuntuacio(1);
+                if (gameScreen.getCurrentState().equals(GameScreen.GameState.RUNNING)) {
+                    gameScreen.getGame().aumentarPuntuacio(1);
+                }
+            }
+        }
+
+        Array<Actor> actors = this.gameScreen.getStage().getActors();
+        for (Actor obj : actors) {
+            if (obj.getClass() == Laser.class) {
+                Laser laser = (Laser) obj;
+                if(laser.outOfScreen)
+                obj.remove();
+                Gdx.app.log("Laser:","Fora de la pantalla");
             }
         }
     }
 
-    public boolean collides(Spacecraft nau) {
 
+    public boolean collides(Spacecraft nau) {
         // Comprovem les col·lisions entre cada asteroid i la nau
         for (Asteroid asteroid : asteroids) {
-            if (asteroid.collides(nau)) {
-                return true;
+            if (asteroid.isVisible()) {
+                if (asteroid.collides(nau)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     public void reset() {
-
         // Posem el primer asteroid fora de la pantalla per la dreta
         asteroids.get(0).reset(Settings.GAME_WIDTH);
         // Calculem les noves posicions de la resta d'asteroids.
         for (int i = 1; i < asteroids.size(); i++) {
-
             asteroids.get(i).reset(asteroids.get(i - 1).getTailX() + Settings.ASTEROID_GAP);
-
         }
     }
 
